@@ -1,5 +1,5 @@
 {
-	"id": "obsidian-fmt-on-save",
+	"id": "fmt-on-save",
 	"name": "Format on Save",
 	"version": "0.1.3",
 	"minAppVersion": "0.15.0",

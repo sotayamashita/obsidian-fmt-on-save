@@ -6,8 +6,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"lint": "eslint .",
+		"build": "pnpm typecheck && node esbuild.config.mjs production",
+		"lint": "oxlint && eslint .",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"typecheck": "tsc -noEmit -skipLibCheck",

@@ -1,37 +1,37 @@
 name: Update versions.json
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - manifest.json
+    pull_request:
+        branches: [main]
+        paths:
+            - manifest.json
 
 jobs:
-  update-versions:
-    if: startsWith(github.head_ref, 'release-please--')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref }}
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+    update-versions:
+        if: startsWith(github.head_ref, 'release-please--')
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  ref: ${{ github.head_ref }}
+                  token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
-      - name: Update versions.json
-        run: |
-          node -e "
-            const fs = require('fs');
-            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
-            const versions = JSON.parse(fs.readFileSync('versions.json', 'utf8'));
-            versions[manifest.version] = manifest.minAppVersion;
-            fs.writeFileSync('versions.json', JSON.stringify(versions, null, '\t') + '\n');
-          "
+            - name: Update versions.json
+              run: |
+                  node -e "
+                    const fs = require('fs');
+                    const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+                    const versions = JSON.parse(fs.readFileSync('versions.json', 'utf8'));
+                    versions[manifest.version] = manifest.minAppVersion;
+                    fs.writeFileSync('versions.json', JSON.stringify(versions, null, '\t') + '\n');
+                  "
 
-      - name: Commit if changed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add versions.json
-          git diff --staged --quiet || git commit -m "chore: update versions.json"
-          git push
+            - name: Commit if changed
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git add versions.json
+                  git diff --staged --quiet || git commit -m "chore: update versions.json"
+                  git push

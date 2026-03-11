@@ -77,16 +77,12 @@ describe("buildLoginShellCommand", () => {
 
 	it("wraps command with user's SHELL as login shell", () => {
 		vi.stubEnv("SHELL", "/bin/zsh");
-		expect(buildLoginShellCommand("which prettier")).toBe(
-			"/bin/zsh -lc 'which prettier'",
-		);
+		expect(buildLoginShellCommand("which prettier")).toBe("/bin/zsh -lc 'which prettier'");
 	});
 
 	it("falls back to /bin/sh when SHELL is not set", () => {
 		vi.stubEnv("SHELL", "");
-		expect(buildLoginShellCommand("which prettier")).toBe(
-			"/bin/sh -lc 'which prettier'",
-		);
+		expect(buildLoginShellCommand("which prettier")).toBe("/bin/sh -lc 'which prettier'");
 	});
 
 	it("uses login shell flag -l to source user profile", () => {
@@ -104,12 +100,8 @@ describe("buildLoginShellCommand", () => {
 
 	it("escapes file paths containing single quotes", () => {
 		vi.stubEnv("SHELL", "/bin/zsh");
-		const result = buildLoginShellCommand(
-			'prettier --write "/vault/it\'s a note.md"',
-		);
-		expect(result).toBe(
-			"/bin/zsh -lc 'prettier --write \"/vault/it'\\''s a note.md\"'",
-		);
+		const result = buildLoginShellCommand('prettier --write "/vault/it\'s a note.md"');
+		expect(result).toBe("/bin/zsh -lc 'prettier --write \"/vault/it'\\''s a note.md\"'");
 	});
 });
 
@@ -144,28 +136,22 @@ describe("buildFormatCommand", () => {
 
 	it("escapes file paths containing single quotes", () => {
 		vi.stubEnv("SHELL", "/bin/zsh");
-		const result = buildFormatCommand(
-			"prettier",
-			"--write",
-			"/vault/it's a note.md",
-		);
-		expect(result).toBe(
-			"/bin/zsh -lc 'prettier --write \"/vault/it'\\''s a note.md\"'",
-		);
+		const result = buildFormatCommand("prettier", "--write", "/vault/it's a note.md");
+		expect(result).toBe("/bin/zsh -lc 'prettier --write \"/vault/it'\\''s a note.md\"'");
 	});
 
 	it("throws on unsafe command names", () => {
 		vi.stubEnv("SHELL", "/bin/zsh");
-		expect(() =>
-			buildFormatCommand("prettier; rm -rf /", "--write", "/file.md"),
-		).toThrow(/Unsafe command/);
+		expect(() => buildFormatCommand("prettier; rm -rf /", "--write", "/file.md")).toThrow(
+			/Unsafe command/,
+		);
 	});
 
 	it("throws on unsafe arguments", () => {
 		vi.stubEnv("SHELL", "/bin/zsh");
-		expect(() =>
-			buildFormatCommand("prettier", "--write; rm -rf /", "/file.md"),
-		).toThrow(/Unsafe arguments/);
+		expect(() => buildFormatCommand("prettier", "--write; rm -rf /", "/file.md")).toThrow(
+			/Unsafe arguments/,
+		);
 	});
 });
 
@@ -176,9 +162,7 @@ describe("buildWhichCommand", () => {
 
 	it("wraps which command in login shell", () => {
 		vi.stubEnv("SHELL", "/bin/zsh");
-		expect(buildWhichCommand("prettier")).toBe(
-			"/bin/zsh -lc 'which prettier'",
-		);
+		expect(buildWhichCommand("prettier")).toBe("/bin/zsh -lc 'which prettier'");
 	});
 
 	it("uses login shell so custom PATH entries are available", () => {
@@ -191,8 +175,6 @@ describe("buildWhichCommand", () => {
 
 	it("throws on unsafe command names", () => {
 		vi.stubEnv("SHELL", "/bin/zsh");
-		expect(() => buildWhichCommand("prettier; rm -rf /")).toThrow(
-			/Unsafe command/,
-		);
+		expect(() => buildWhichCommand("prettier; rm -rf /")).toThrow(/Unsafe command/);
 	});
 });

@@ -1,7 +1,7 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import { exec } from "child_process";
 import type FmtOnSavePlugin from "./main";
-import { buildWhichCommand } from "./shell";
+import { buildWhichCommand, validateCommand } from "./shell";
 
 /** Persisted configuration for the Format on Save plugin. */
 export interface FmtOnSaveSettings {
@@ -72,6 +72,12 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 					.setDisabled(!this.plugin.settings.command)
 					.onClick(() => {
 						const cmd = this.plugin.settings.command;
+						try {
+							validateCommand(cmd);
+						} catch (e) {
+							new Notice((e as Error).message);
+							return;
+						}
 						exec(buildWhichCommand(cmd), (error, stdout) => {
 							if (error) {
 								new Notice(`"${cmd}" was not found on your PATH.`);

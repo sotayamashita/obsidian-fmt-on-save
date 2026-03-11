@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/obsidian-fmt-on-save-v0.1.1...obsidian-fmt-on-save-v0.1.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* prevent shell injection in formatter command execution ([04eb809](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/04eb809eafd990f339a17a3b61e9210573d3cbb6))
+* prevent shell injection in formatter command execution ([94d69c1](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/94d69c1177d7c01bea2c50a74c062dd9a373eeae))
+
 ## [0.1.1](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/obsidian-fmt-on-save-v0.1.0...obsidian-fmt-on-save-v0.1.1) (2026-03-11)
 
 

@@ -2,6 +2,7 @@ import { FileSystemAdapter, Notice, Plugin, TFile } from "obsidian";
 import { exec } from "child_process";
 import { DEFAULT_SETTINGS, FmtOnSaveSettingTab } from "./settings";
 import type { FmtOnSaveSettings } from "./settings";
+import { buildFormatCommand } from "./shell";
 
 /**
  * Obsidian plugin that runs an external formatter on every file save.
@@ -126,13 +127,7 @@ export default class FmtOnSavePlugin extends Plugin {
 		const vaultPath = adapter.getBasePath();
 		const filePath = adapter.getFullPath(file.path);
 
-		const parts = [command];
-		const trimmedArgs = args.trim();
-		if (trimmedArgs) {
-			parts.push(trimmedArgs);
-		}
-		parts.push(`"${filePath}"`);
-		const cmd = parts.join(" ");
+		const cmd = buildFormatCommand(command, args, filePath);
 
 		this.formattingPaths.add(file.path);
 		exec(cmd, { cwd: vaultPath }, (error, _stdout, stderr) => {

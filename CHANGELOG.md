@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/obsidian-fmt-on-save-v0.1.2...obsidian-fmt-on-save-v0.1.3) (2026-03-11)
+
+
+### Bug Fixes
+
+* **ci:** update versions.json in release-please PR instead of direct push ([#12](https://github.com/sotayamashita/obsidian-fmt-on-save/issues/12)) ([f367d52](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/f367d526d1223de0055651a0a632b3ba27b9f2e3))
+
 ## [0.1.2](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/obsidian-fmt-on-save-v0.1.1...obsidian-fmt-on-save-v0.1.2) (2026-03-11)
 
 

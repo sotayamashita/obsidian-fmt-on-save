@@ -48,16 +48,16 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 		};
 
 		// ── Formatter ───────────────────────────────────────
-		containerEl.createEl("h3", { text: "Formatter" });
+		new Setting(containerEl).setName("Formatter").setHeading();
 
 		let testButton: import("obsidian").ButtonComponent;
 
 		new Setting(containerEl)
 			.setName("Command")
-			.setDesc("Path to the formatter executable (e.g. prettier, deno, oxfmt).")
+			.setDesc("Path to the formatter executable (e.g. Prettier, deno, oxfmt).")
 			.addText((text) =>
 				text
-					.setPlaceholder("prettier")
+					.setPlaceholder("Prettier")
 					.setValue(this.plugin.settings.command)
 					.onChange(async (value) => {
 						this.plugin.settings.command = value;
@@ -68,7 +68,7 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 			.addButton((button) => {
 				testButton = button;
 				button
-					.setButtonText("Check PATH")
+					.setButtonText("Check path")
 					.setDisabled(!this.plugin.settings.command)
 					.onClick(() => {
 						const cmd = this.plugin.settings.command;
@@ -99,7 +99,7 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 			);
 
 		// ── Behavior ────────────────────────────────────────
-		containerEl.createEl("h3", { text: "Behavior" });
+		new Setting(containerEl).setName("Behavior").setHeading();
 
 		new Setting(containerEl)
 			.setName("Format on save")

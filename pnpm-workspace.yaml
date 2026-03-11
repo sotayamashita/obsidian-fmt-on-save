@@ -1,0 +1,5 @@
+packages:
+  - "."
+
+settings:
+  minimumReleaseAge: 1440

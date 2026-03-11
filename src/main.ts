@@ -1,99 +1,157 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { FileSystemAdapter, Notice, Plugin, TFile } from "obsidian";
+import { exec } from "child_process";
+import { DEFAULT_SETTINGS, FmtOnSaveSettingTab } from "./settings";
+import type { FmtOnSaveSettings } from "./settings";
 
-// Remember to rename these classes and interfaces!
+/**
+ * Obsidian plugin that runs an external formatter on every file save.
+ *
+ * Listens for vault `modify` events, debounces rapid edits, and shells out
+ * to a user-configured CLI formatter (e.g. Prettier, deno fmt).
+ * Desktop only — relies on `child_process.exec`.
+ */
+const POST_FORMAT_COOLDOWN_MS = 1000;
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class FmtOnSavePlugin extends Plugin {
+	settings!: FmtOnSaveSettings;
+	private formattingPaths: Set<string> = new Set();
+	private recentlyFormatted: Set<string> = new Set();
+	private debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+	private cooldownTimers: Set<ReturnType<typeof setTimeout>> = new Set();
 
-	async onload() {
+	/** Registers the modify listener, format command, and settings tab. */
+	override async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		this.app.workspace.onLayoutReady(() => {
+			this.registerEvent(
+				this.app.vault.on("modify", (file) => {
+					if (!this.settings.enabled) return;
+					if (!(file instanceof TFile)) return;
+					if (file.extension !== "md") return;
+					if (this.formattingPaths.has(file.path)) return;
+					if (this.recentlyFormatted.has(file.path)) return;
+
+					this.scheduleFormat(file);
+				}),
+			);
 		});
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+			id: "format-current-file",
+			name: "Format current file",
+			checkCallback: (checking) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file || file.extension !== "md") return false;
+				if (!checking) {
+					this.formatFile(file);
 				}
-				return false;
-			}
+				return true;
+			},
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
+		this.addSettingTab(new FmtOnSaveSettingTab(this.app, this));
 	}
 
-	onunload() {
+	/** Clears all pending debounce timers on plugin unload. */
+	override onunload() {
+		for (const timer of this.debounceTimers.values()) {
+			clearTimeout(timer);
+		}
+		this.debounceTimers.clear();
+		for (const timer of this.cooldownTimers) {
+			clearTimeout(timer);
+		}
+		this.cooldownTimers.clear();
+		this.formattingPaths.clear();
+		this.recentlyFormatted.clear();
 	}
 
+	/** Loads persisted settings, falling back to {@link DEFAULT_SETTINGS}. */
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			(await this.loadData()) as Partial<FmtOnSaveSettings>,
+		);
 	}
 
+	/** Persists the current settings to disk. */
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-}
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+	/**
+	 * Debounces formatting for the given file.
+	 *
+	 * Resets the timer on each call so rapid edits coalesce into a single
+	 * format invocation after {@link FmtOnSaveSettings.debounceMs} ms of quiet.
+	 */
+	private scheduleFormat(file: TFile) {
+		const existing = this.debounceTimers.get(file.path);
+		if (existing) {
+			clearTimeout(existing);
+		}
+
+		const timer = setTimeout(() => {
+			this.debounceTimers.delete(file.path);
+			this.formatFile(file);
+		}, this.settings.debounceMs);
+
+		this.debounceTimers.set(file.path, timer);
 	}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
+	/**
+	 * Runs the configured formatter against a file.
+	 *
+	 * Builds a shell command from {@link FmtOnSaveSettings.command},
+	 * {@link FmtOnSaveSettings.args}, and the file's absolute path, then
+	 * executes it via `child_process.exec`. Tracks in-flight and recently
+	 * formatted paths to prevent re-trigger loops caused by the formatter's
+	 * own file write.
+	 */
+	private formatFile(file: TFile) {
+		const { command, args } = this.settings;
+		if (!command) {
+			new Notice("Format on save: no command configured.");
+			return;
+		}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
+		if (!(this.app.vault.adapter instanceof FileSystemAdapter)) {
+			new Notice("Format on save: cannot resolve vault path.");
+			return;
+		}
+
+		const adapter = this.app.vault.adapter;
+		const vaultPath = adapter.getBasePath();
+		const filePath = adapter.getFullPath(file.path);
+
+		const parts = [command];
+		const trimmedArgs = args.trim();
+		if (trimmedArgs) {
+			parts.push(trimmedArgs);
+		}
+		parts.push(`"${filePath}"`);
+		const cmd = parts.join(" ");
+
+		this.formattingPaths.add(file.path);
+		exec(cmd, { cwd: vaultPath }, (error, _stdout, stderr) => {
+			this.formattingPaths.delete(file.path);
+			// Briefly ignore modify events to prevent re-trigger from the formatter's write
+			this.recentlyFormatted.add(file.path);
+			const cooldown = setTimeout(() => {
+				this.cooldownTimers.delete(cooldown);
+				this.recentlyFormatted.delete(file.path);
+			}, POST_FORMAT_COOLDOWN_MS);
+			this.cooldownTimers.add(cooldown);
+			if (error) {
+				new Notice(`Format on save: ${error.message}`);
+				console.error("fmt-on-save error:", error);
+				return;
+			}
+			if (stderr) {
+				console.warn("fmt-on-save stderr:", stderr);
+			}
+		});
 	}
 }

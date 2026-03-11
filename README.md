@@ -35,6 +35,48 @@ The file's absolute path is appended automatically as the last argument.
 
 Place your formatter's config file (`.prettierrc`, `deno.json`, `.oxfmtrc.json`, etc.) in your vault root or home directory as usual.
 
+## Release workflow
+
+Releases are fully automated via [release-please](https://github.com/googleapis/release-please).
+
+### How to release
+
+1. Merge PRs with [Conventional Commits](https://www.conventionalcommits.org/) into `main`
+2. release-please automatically opens (or updates) a Release PR that bumps the version and updates the changelog
+3. Merge the Release PR — this creates a git tag and GitHub Release
+4. The publish job builds `main.js` and uploads release assets
+
+```mermaid
+sequenceDiagram
+    participant M as main branch
+    participant RP as release-please
+    participant PB as publish job
+    participant GH as GitHub Release
+
+    M->>RP: push with conventional commits
+    RP->>M: open/update Release PR (bump version + changelog)
+    M->>RP: merge Release PR
+    RP->>GH: create git tag + GitHub Release
+    GH->>PB: release triggers publish job
+    PB->>GH: upload main.js, manifest.json
+    PB->>M: commit updated versions.json
+```
+
+### Commit conventions
+
+| Prefix | Version bump | Example |
+|--------|-------------|---------|
+| `fix:` | patch (0.0.x) | `fix: handle empty files on save` |
+| `feat:` | minor (0.x.0) | `feat: add timeout setting` |
+| `feat!:` or `BREAKING CHANGE:` | major (x.0.0) | `feat!: change settings format` |
+
+### Release artifacts
+
+Each release includes:
+
+- `main.js` — bundled plugin code
+- `manifest.json` — plugin metadata
+
 ## Installation
 
 ### Manual

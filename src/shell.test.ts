@@ -45,6 +45,31 @@ describe("validateCommand", () => {
 	it("rejects empty string", () => {
 		expect(() => validateCommand("")).toThrow(/Unsafe command/);
 	});
+
+	it("rejects unicode homoglyphs (Cyrillic е)", () => {
+		expect(() => validateCommand("prеttiеr")).toThrow(/Unsafe command/);
+	});
+
+	it("rejects fullwidth characters", () => {
+		expect(() => validateCommand("ｐｒｅｔｔｉｅｒ")).toThrow(/Unsafe command/);
+	});
+
+	it("rejects null bytes", () => {
+		expect(() => validateCommand("prettier\x00")).toThrow(/Unsafe command/);
+	});
+
+	it("rejects newline characters", () => {
+		expect(() => validateCommand("prettier\n")).toThrow(/Unsafe command/);
+		expect(() => validateCommand("prettier\r")).toThrow(/Unsafe command/);
+	});
+
+	it("rejects tab characters", () => {
+		expect(() => validateCommand("prettier\t")).toThrow(/Unsafe command/);
+	});
+
+	it("rejects backslash characters", () => {
+		expect(() => validateCommand("prettier\\")).toThrow(/Unsafe command/);
+	});
 });
 
 describe("validateArgs", () => {
@@ -67,6 +92,26 @@ describe("validateArgs", () => {
 	it("rejects arguments with quotes", () => {
 		expect(() => validateArgs("--config='bad'")).toThrow(/Unsafe arguments/);
 		expect(() => validateArgs('--config="bad"')).toThrow(/Unsafe arguments/);
+	});
+
+	it("rejects null bytes", () => {
+		expect(() => validateArgs("--write\x00")).toThrow(/Unsafe arguments/);
+	});
+
+	it("rejects newline characters", () => {
+		expect(() => validateArgs("--write\n")).toThrow(/Unsafe arguments/);
+	});
+
+	it("rejects tab characters", () => {
+		expect(() => validateArgs("--write\t")).toThrow(/Unsafe arguments/);
+	});
+
+	it("rejects backslash characters", () => {
+		expect(() => validateArgs("--write\\")).toThrow(/Unsafe arguments/);
+	});
+
+	it("rejects unicode characters", () => {
+		expect(() => validateArgs("--writé")).toThrow(/Unsafe arguments/);
 	});
 });
 
@@ -102,6 +147,12 @@ describe("buildLoginShellCommand", () => {
 		vi.stubEnv("SHELL", "/bin/zsh");
 		const result = buildLoginShellCommand('prettier --write "/vault/it\'s a note.md"');
 		expect(result).toBe("/bin/zsh -lc 'prettier --write \"/vault/it'\\''s a note.md\"'");
+	});
+
+	it("escapes consecutive single quotes", () => {
+		vi.stubEnv("SHELL", "/bin/zsh");
+		const result = buildLoginShellCommand("echo '''");
+		expect(result).toBe("/bin/zsh -lc 'echo '\\'''\\'''\\'''");
 	});
 });
 
@@ -152,6 +203,40 @@ describe("buildFormatCommand", () => {
 		expect(() => buildFormatCommand("prettier", "--write; rm -rf /", "/file.md")).toThrow(
 			/Unsafe arguments/,
 		);
+	});
+
+	it("handles file path containing double quotes", () => {
+		vi.stubEnv("SHELL", "/bin/zsh");
+		const result = buildFormatCommand("prettier", "--write", '/vault/file".md');
+		expect(result).toContain('/vault/file".md');
+		expect(result).toMatch(/^\/bin\/zsh -lc '/);
+	});
+
+	it("neutralizes command substitution $() in file path", () => {
+		vi.stubEnv("SHELL", "/bin/zsh");
+		const result = buildFormatCommand("prettier", "--write", "/vault/$(rm -rf /).md");
+		expect(result).toContain("$(rm -rf /)");
+		expect(result).toMatch(/^\/bin\/zsh -lc '/);
+	});
+
+	it("neutralizes backtick command substitution in file path", () => {
+		vi.stubEnv("SHELL", "/bin/zsh");
+		const result = buildFormatCommand("prettier", "--write", "/vault/`whoami`.md");
+		expect(result).toContain("`whoami`");
+		expect(result).toMatch(/^\/bin\/zsh -lc '/);
+	});
+
+	it("handles file path containing newlines", () => {
+		vi.stubEnv("SHELL", "/bin/zsh");
+		const result = buildFormatCommand("prettier", "--write", "/vault/file\n.md");
+		expect(result).toContain("/vault/file\n.md");
+	});
+
+	it("handles file path containing path traversal (..)", () => {
+		vi.stubEnv("SHELL", "/bin/zsh");
+		const result = buildFormatCommand("prettier", "--write", "/vault/../etc/passwd");
+		expect(result).toContain("/vault/../etc/passwd");
+		expect(result).toMatch(/^\/bin\/zsh -lc '/);
 	});
 });
 

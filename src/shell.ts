@@ -71,11 +71,7 @@ export function buildLoginShellCommand(innerCmd: string): string {
  * @returns A login-shell-wrapped command string ready for `child_process.exec`.
  * @throws {Error} if the command name contains unsafe characters.
  */
-export function buildFormatCommand(
-	command: string,
-	args: string,
-	filePath: string,
-): string {
+export function buildFormatCommand(command: string, args: string, filePath: string): string {
 	validateCommand(command);
 	const trimmedArgs = args.trim();
 	if (trimmedArgs) {

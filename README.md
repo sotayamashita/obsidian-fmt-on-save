@@ -10,24 +10,27 @@ An Obsidian plugin that runs any external formatter on save. Bring your own tool
 
 ## Configuration
 
-| Setting | Description | Default | Example |
-|---------|-------------|---------|---------|
-| Enable | Toggle auto-format on save | `true` | on/off |
-| Formatter command | Path to the formatter executable | `""` (empty) | `prettier`, `deno`, `/usr/local/bin/prettier` |
-| Formatter arguments | Arguments passed before the file path | `""` (empty) | `--write`, `fmt` |
-| Debounce delay (ms) | Wait time after last edit before formatting | `500` | `500` |
+| Setting             | Description                                 | Default      | Example                                       |
+| ------------------- | ------------------------------------------- | ------------ | --------------------------------------------- |
+| Enable              | Toggle auto-format on save                  | `true`       | on/off                                        |
+| Formatter command   | Path to the formatter executable            | `""` (empty) | `prettier`, `deno`, `/usr/local/bin/prettier` |
+| Formatter arguments | Arguments passed before the file path       | `""` (empty) | `--write`, `fmt`                              |
+| Debounce delay (ms) | Wait time after last edit before formatting | `500`        | `500`                                         |
 
 ### Examples
 
 **Prettier:**
+
 - Command: `prettier`
 - Arguments: `--write`
 
 **deno fmt:**
+
 - Command: `deno`
 - Arguments: `fmt`
 
 **oxfmt:**
+
 - Command: `oxfmt`
 - Arguments: `--write`
 
@@ -64,11 +67,11 @@ sequenceDiagram
 
 ### Commit conventions
 
-| Prefix | Version bump | Example |
-|--------|-------------|---------|
-| `fix:` | patch (0.0.x) | `fix: handle empty files on save` |
-| `feat:` | minor (0.x.0) | `feat: add timeout setting` |
-| `feat!:` or `BREAKING CHANGE:` | major (x.0.0) | `feat!: change settings format` |
+| Prefix                         | Version bump  | Example                           |
+| ------------------------------ | ------------- | --------------------------------- |
+| `fix:`                         | patch (0.0.x) | `fix: handle empty files on save` |
+| `feat:`                        | minor (0.x.0) | `feat: add timeout setting`       |
+| `feat!:` or `BREAKING CHANGE:` | major (x.0.0) | `feat!: change settings format`   |
 
 ### Release artifacts
 

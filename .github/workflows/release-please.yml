@@ -28,37 +28,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+      - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-
-      - name: Update versions.json
-        run: |
-          node -e "
-            const fs = require('fs');
-            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
-            const versions = JSON.parse(fs.readFileSync('versions.json', 'utf8'));
-            versions[manifest.version] = manifest.minAppVersion;
-            fs.writeFileSync('versions.json', JSON.stringify(versions, null, '\t') + '\n');
-          "
-
-      - name: Commit versions.json
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add versions.json
-          git diff --staged --quiet || git commit -m "chore: update versions.json for ${{ needs.release-please.outputs.version }}"
-          git push
 
       - run: pnpm run build
 

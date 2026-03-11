@@ -85,7 +85,7 @@ Each release includes:
 ### Manual
 
 1. Build the plugin: `pnpm install && pnpm run build`
-2. Copy `main.js` and `manifest.json` to `<vault>/.obsidian/plugins/obsidian-fmt-on-save/`
+2. Copy `main.js` and `manifest.json` to `<vault>/.obsidian/plugins/fmt-on-save/`
 3. Reload Obsidian and enable the plugin in **Settings → Community plugins**
 
 ## Desktop only

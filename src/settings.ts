@@ -37,52 +37,23 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		const dependentSettings: Setting[] = [];
+		const dependentEls: HTMLElement[] = [];
 
 		const setDependentsDisabled = (disabled: boolean) => {
-			for (const s of dependentSettings) {
-				s.settingEl.toggleClass("is-disabled", disabled);
-				s.settingEl.style.opacity = disabled ? "0.5" : "";
-				s.settingEl.style.pointerEvents = disabled ? "none" : "";
+			for (const el of dependentEls) {
+				el.toggleClass("is-disabled", disabled);
+				el.style.opacity = disabled ? "0.5" : "";
+				el.style.pointerEvents = disabled ? "none" : "";
 			}
 		};
 
-		new Setting(containerEl)
-			.setName("Enable")
-			.setDesc("Automatically format Markdown files when they are modified.")
-			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.enabled).onChange(async (value) => {
-					this.plugin.settings.enabled = value;
-					await this.plugin.saveSettings();
-					setDependentsDisabled(!value);
-				}),
-			);
-
-		const previewSetting = new Setting(containerEl).setName("Command preview");
-		dependentSettings.push(previewSetting);
-
-		const updatePreview = () => {
-			const descEl = previewSetting.descEl;
-			descEl.empty();
-			const { command, args } = this.plugin.settings;
-			if (!command) {
-				descEl.appendText("No command configured.");
-				return;
-			}
-			const parts = [command];
-			const trimmedArgs = args.trim();
-			if (trimmedArgs) {
-				parts.push(trimmedArgs);
-			}
-			parts.push("{{file}}");
-			descEl.createEl("code", { text: parts.join(" ") });
-		};
-		updatePreview();
+		// ── Formatter ───────────────────────────────────────
+		containerEl.createEl("h3", { text: "Formatter" });
 
 		let testButton: import("obsidian").ButtonComponent;
 
-		const commandSetting = new Setting(containerEl)
-			.setName("Formatter command")
+		new Setting(containerEl)
+			.setName("Command")
 			.setDesc("Path to the formatter executable (e.g. prettier, deno, oxfmt).")
 			.addText((text) =>
 				text
@@ -91,7 +62,6 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.command = value;
 						await this.plugin.saveSettings();
-						updatePreview();
 						testButton?.setDisabled(!value);
 					}),
 			)
@@ -111,10 +81,9 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 						});
 					});
 			});
-		dependentSettings.push(commandSetting);
 
-		const argsSetting = new Setting(containerEl)
-			.setName("Formatter arguments")
+		new Setting(containerEl)
+			.setName("Arguments")
 			.setDesc(
 				"Arguments passed before the file path (e.g. --write, fmt). " +
 					"The file's absolute path is appended automatically.",
@@ -126,10 +95,22 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.args = value;
 						await this.plugin.saveSettings();
-						updatePreview();
 					}),
 			);
-		dependentSettings.push(argsSetting);
+
+		// ── Behavior ────────────────────────────────────────
+		containerEl.createEl("h3", { text: "Behavior" });
+
+		new Setting(containerEl)
+			.setName("Format on save")
+			.setDesc("Automatically format Markdown files when they are modified.")
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.enabled).onChange(async (value) => {
+					this.plugin.settings.enabled = value;
+					await this.plugin.saveSettings();
+					setDependentsDisabled(!value);
+				}),
+			);
 
 		const debounceSetting = new Setting(containerEl)
 			.setName("Debounce delay (ms)")
@@ -157,7 +138,7 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 						}
 					}),
 			);
-		dependentSettings.push(debounceSetting);
+		dependentEls.push(debounceSetting.settingEl);
 
 		setDependentsDisabled(!this.plugin.settings.enabled);
 	}

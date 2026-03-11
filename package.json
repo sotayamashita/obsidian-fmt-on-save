@@ -25,6 +25,7 @@
 		"esbuild": "0.27.3",
 		"eslint": "^10.0.0",
 		"eslint-plugin-obsidianmd": "0.1.9",
+		"eslint-plugin-oxlint": "^1.51.0",
 		"globals": "17.4.0",
 		"husky": "^9.1.7",
 		"jiti": "2.6.1",

@@ -24,4 +24,5 @@ jobs:
                   cache: "pnpm"
             - run: pnpm install --frozen-lockfile
             - run: pnpm run build
+            - run: pnpm exec oxlint
             - run: pnpm run lint

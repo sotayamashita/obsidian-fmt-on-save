@@ -36,6 +36,9 @@ importers:
       eslint-plugin-obsidianmd:
         specifier: 0.1.9
         version: 0.1.9(@eslint/js@10.0.1(eslint@10.0.3(jiti@2.6.1)))(@eslint/json@0.14.0)(@typescript-eslint/parser@8.57.0(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(obsidian@1.12.3(@codemirror/state@6.5.0)(@codemirror/view@6.38.6))(typescript-eslint@8.57.0(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))
+      eslint-plugin-oxlint:
+        specifier: ^1.51.0
+        version: 1.51.0
       globals:
         specifier: 17.4.0
         version: 17.4.0
@@ -1387,6 +1390,9 @@ packages:
       obsidian: 1.8.7
       typescript-eslint: ^8.35.1
 
+  eslint-plugin-oxlint@1.51.0:
+    resolution: {integrity: sha512-lct8LD1AxfHF1PcsuK6mFYals+zX0mx/WP2G4i16h0iR8jpT3xCfGTmTNwXiImcevzGIiJ/VDBgQ7t0B9z2Jeg==}
+
   eslint-plugin-react@7.37.3:
     resolution: {integrity: sha512-DomWuTQPFYZwF/7c9W2fkKkStqZmBd3uugfqBYLdkZ3Hii23WzZuOLUskGxB8qkSKqftxEeGL1TB2kMhrce0jA==}
     engines: {node: '>=4'}
@@ -1823,6 +1829,9 @@ packages:
   jsonc-eslint-parser@2.4.2:
     resolution: {integrity: sha512-1e4qoRgnn448pRuMvKGsFFymUCquZV0mpGgOyIKNgD3JVDTsVJyRBGH/Fm0tBb8WsWGgmB1mDe6/yJMQM37DUA==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  jsonc-parser@3.3.1:
+    resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
 
   jsx-ast-utils@3.3.5:
     resolution: {integrity: sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ==}
@@ -3907,6 +3916,10 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
+  eslint-plugin-oxlint@1.51.0:
+    dependencies:
+      jsonc-parser: 3.3.1
+
   eslint-plugin-react@7.37.3(eslint@10.0.3(jiti@2.6.1)):
     dependencies:
       array-includes: 3.1.9
@@ -4373,6 +4386,8 @@ snapshots:
       eslint-visitor-keys: 3.4.3
       espree: 9.6.1
       semver: 7.7.4
+
+  jsonc-parser@3.3.1: {}
 
   jsx-ast-utils@3.3.5:
     dependencies:

@@ -127,7 +127,13 @@ export default class FmtOnSavePlugin extends Plugin {
 		const vaultPath = adapter.getBasePath();
 		const filePath = adapter.getFullPath(file.path);
 
-		const cmd = buildFormatCommand(command, args, filePath);
+		let cmd: string;
+		try {
+			cmd = buildFormatCommand(command, args, filePath);
+		} catch (e) {
+			new Notice(`Format on save: ${(e as Error).message}`);
+			return;
+		}
 
 		this.formattingPaths.add(file.path);
 		exec(cmd, { cwd: vaultPath }, (error, _stdout, stderr) => {

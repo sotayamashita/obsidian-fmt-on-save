@@ -8,6 +8,7 @@ export default defineConfig({
 		},
 	},
 	test: {
+		restoreMocks: true,
 		coverage: {
 			provider: "v8",
 			reporter: ["text", "json-summary", "json"],

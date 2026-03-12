@@ -1,6 +1,10 @@
 import { readFileSync } from "fs";
-import { resolve } from "path";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(__dirname, "..");
 
 const SOURCE_FILES = ["src/main.ts", "src/shell.ts", "src/settings.ts"];
 
@@ -15,7 +19,7 @@ const DANGEROUS_PATTERNS = [
 describe("static security guardrails", () => {
 	for (const file of SOURCE_FILES) {
 		describe(file, () => {
-			const content = readFileSync(resolve(file), "utf-8");
+			const content = readFileSync(resolve(ROOT, file), "utf-8");
 
 			for (const { pattern, label } of DANGEROUS_PATTERNS) {
 				it(`does not use ${label}`, () => {

@@ -42,14 +42,11 @@ class MockTextComponent {
 		return this;
 	}
 	onChange(cb: TextOnChange) {
-		MockTextComponent.lastOnChange = cb;
 		MockTextComponent.allOnChange.push(cb);
 		return this;
 	}
-	static lastOnChange: TextOnChange | null = null;
 	static allOnChange: TextOnChange[] = [];
 	static reset() {
-		MockTextComponent.lastOnChange = null;
 		MockTextComponent.allOnChange = [];
 	}
 }
@@ -63,6 +60,9 @@ class MockToggleComponent {
 		return this;
 	}
 	static lastOnChange: ToggleOnChange | null = null;
+	static reset() {
+		MockToggleComponent.lastOnChange = null;
+	}
 }
 
 class MockButtonComponent {
@@ -79,6 +79,10 @@ class MockButtonComponent {
 	}
 	static lastOnClick: (() => void) | null = null;
 	static lastSetDisabled: boolean | null = null;
+	static reset() {
+		MockButtonComponent.lastOnClick = null;
+		MockButtonComponent.lastSetDisabled = null;
+	}
 }
 
 export { MockTextComponent, MockToggleComponent, MockButtonComponent };
@@ -105,10 +109,7 @@ export class Setting {
 		cb(new MockButtonComponent());
 		return this;
 	}
-	settingEl =
-		typeof document !== "undefined"
-			? document.createElement("div")
-			: ({ toggleClass: vi.fn(), style: {} } as unknown as HTMLElement);
+	settingEl = { toggleClass: vi.fn(), style: {} } as unknown as HTMLElement;
 	descEl = { setText: vi.fn() };
 }
 

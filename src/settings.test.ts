@@ -27,9 +27,8 @@ describe("FmtOnSaveSettingTab", () => {
 		mockedExec.mockReset();
 		mockedNotice.mockReset();
 		MockTextComponent.reset();
-		MockToggleComponent.lastOnChange = null;
-		MockButtonComponent.lastOnClick = null;
-		MockButtonComponent.lastSetDisabled = null;
+		MockToggleComponent.reset();
+		MockButtonComponent.reset();
 	});
 
 	afterEach(() => {

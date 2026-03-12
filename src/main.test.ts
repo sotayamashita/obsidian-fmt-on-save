@@ -42,6 +42,39 @@ function createPlugin(overrides?: Partial<{ loadDataReturn: unknown }>): FmtOnSa
 	return plugin;
 }
 
+function makeFile(path = "note.md") {
+	// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
+	return { path, extension: "md" } as TFile;
+}
+
+type ExecCallback = (err: Error | null, stdout: string, stderr: string) => void;
+
+function mockExecWith(err: Error | null, stdout: string, stderr: string) {
+	vi.mocked(exec).mockImplementation((_cmd: unknown, _opts: unknown, callback: unknown) => {
+		const cb = (typeof _opts === "function" ? _opts : callback) as ExecCallback;
+		cb(err, stdout, stderr);
+		return {} as ReturnType<typeof exec>;
+	});
+}
+
+function getModifyHandler(plugin: FmtOnSavePlugin): (file: unknown) => void {
+	const workspace = plugin.app.workspace as unknown as Record<string, ReturnType<typeof vi.fn>>;
+	const layoutReadyCb = workspace["onLayoutReady"]!.mock.calls[0]![0] as () => void;
+	layoutReadyCb();
+
+	const vaultOn = (plugin.app.vault as unknown as Record<string, ReturnType<typeof vi.fn>>)[
+		"on"
+	]!;
+	return vaultOn.mock.calls[0]![1] as (file: unknown) => void;
+}
+
+function getCheckCallback(plugin: FmtOnSavePlugin): (checking: boolean) => boolean {
+	const commandArg = vi.mocked(plugin.addCommand).mock.calls[0]![0] as {
+		checkCallback: (checking: boolean) => boolean;
+	};
+	return commandArg.checkCallback;
+}
+
 describe("DEFAULT_SETTINGS", () => {
 	it("has expected structure and values", () => {
 		expect(DEFAULT_SETTINGS).toEqual({
@@ -102,15 +135,9 @@ describe("formatFile", () => {
 		vi.unstubAllEnvs();
 	});
 
-	function makeFile(path = "note.md") {
-		// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
-		return { path, extension: "md" } as TFile;
-	}
-
 	it("shows notice and does not exec when command is empty", async () => {
 		const plugin = createPlugin();
 		await plugin.loadSettings();
-		plugin.settings.command = "";
 
 		asTestAccess(plugin).formatFile(makeFile());
 
@@ -161,16 +188,7 @@ describe("formatFile", () => {
 		plugin.settings.args = "--write";
 
 		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-		mockedExec.mockImplementation((_cmd: unknown, _opts: unknown, callback: unknown) => {
-			const cb = (typeof _opts === "function" ? _opts : callback) as (
-				err: Error | null,
-				stdout: string,
-				stderr: string,
-			) => void;
-			cb(new Error("command not found"), "", "");
-			return {} as ReturnType<typeof exec>;
-		});
+		mockExecWith(new Error("command not found"), "", "");
 
 		asTestAccess(plugin).formatFile(makeFile());
 
@@ -186,16 +204,7 @@ describe("formatFile", () => {
 		plugin.settings.args = "--write";
 
 		const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-		mockedExec.mockImplementation((_cmd: unknown, _opts: unknown, callback: unknown) => {
-			const cb = (typeof _opts === "function" ? _opts : callback) as (
-				err: Error | null,
-				stdout: string,
-				stderr: string,
-			) => void;
-			cb(null, "", "some warning");
-			return {} as ReturnType<typeof exec>;
-		});
+		mockExecWith(null, "", "some warning");
 
 		asTestAccess(plugin).formatFile(makeFile());
 
@@ -209,8 +218,7 @@ describe("formatFile", () => {
 		plugin.settings.command = "prettier";
 		plugin.settings.args = "--write";
 
-		let capturedCallback: ((err: Error | null, stdout: string, stderr: string) => void) | null =
-			null;
+		let capturedCallback: ExecCallback | null = null;
 
 		mockedExec.mockImplementation((_cmd: unknown, _opts: unknown, callback: unknown) => {
 			capturedCallback = (
@@ -229,29 +237,23 @@ describe("formatFile", () => {
 
 	it("tracks recentlyFormatted after exec completes", async () => {
 		vi.useFakeTimers();
-		const plugin = createPlugin();
-		await plugin.loadSettings();
-		plugin.settings.command = "prettier";
-		plugin.settings.args = "--write";
+		try {
+			const plugin = createPlugin();
+			await plugin.loadSettings();
+			plugin.settings.command = "prettier";
+			plugin.settings.args = "--write";
 
-		mockedExec.mockImplementation((_cmd: unknown, _opts: unknown, callback: unknown) => {
-			const cb = (typeof _opts === "function" ? _opts : callback) as (
-				err: Error | null,
-				stdout: string,
-				stderr: string,
-			) => void;
-			cb(null, "", "");
-			return {} as ReturnType<typeof exec>;
-		});
+			mockExecWith(null, "", "");
 
-		asTestAccess(plugin).formatFile(makeFile("test.md"));
+			asTestAccess(plugin).formatFile(makeFile("test.md"));
 
-		expect(asTestAccess(plugin).recentlyFormatted.has("test.md")).toBe(true);
+			expect(asTestAccess(plugin).recentlyFormatted.has("test.md")).toBe(true);
 
-		vi.advanceTimersByTime(1000);
-		expect(asTestAccess(plugin).recentlyFormatted.has("test.md")).toBe(false);
-
-		vi.useRealTimers();
+			vi.advanceTimersByTime(1000);
+			expect(asTestAccess(plugin).recentlyFormatted.has("test.md")).toBe(false);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });
 
@@ -284,7 +286,6 @@ describe("onload", () => {
 		const commandArg = vi.mocked(plugin.addCommand).mock.calls[0]![0] as {
 			id: string;
 			name: string;
-			checkCallback: (checking: boolean) => boolean;
 		};
 		expect(commandArg.id).toBe("format-current-file");
 		expect(commandArg.name).toBe("Format current file");
@@ -299,10 +300,7 @@ describe("onload", () => {
 		workspace["getActiveFile"]!.mockReturnValue(null);
 		await plugin.onload();
 
-		const commandArg = vi.mocked(plugin.addCommand).mock.calls[0]![0] as {
-			checkCallback: (checking: boolean) => boolean;
-		};
-		expect(commandArg.checkCallback(true)).toBe(false);
+		expect(getCheckCallback(plugin)(true)).toBe(false);
 	});
 
 	it("checkCallback returns false for non-md file", async () => {
@@ -314,10 +312,7 @@ describe("onload", () => {
 		workspace["getActiveFile"]!.mockReturnValue({ path: "image.png", extension: "png" });
 		await plugin.onload();
 
-		const commandArg = vi.mocked(plugin.addCommand).mock.calls[0]![0] as {
-			checkCallback: (checking: boolean) => boolean;
-		};
-		expect(commandArg.checkCallback(true)).toBe(false);
+		expect(getCheckCallback(plugin)(true)).toBe(false);
 	});
 
 	it("checkCallback returns true for md file when checking", async () => {
@@ -329,10 +324,7 @@ describe("onload", () => {
 		workspace["getActiveFile"]!.mockReturnValue({ path: "note.md", extension: "md" });
 		await plugin.onload();
 
-		const commandArg = vi.mocked(plugin.addCommand).mock.calls[0]![0] as {
-			checkCallback: (checking: boolean) => boolean;
-		};
-		expect(commandArg.checkCallback(true)).toBe(true);
+		expect(getCheckCallback(plugin)(true)).toBe(true);
 		expect(mockedExec).not.toHaveBeenCalled();
 	});
 
@@ -345,10 +337,7 @@ describe("onload", () => {
 		workspace["getActiveFile"]!.mockReturnValue({ path: "note.md", extension: "md" });
 		await plugin.onload();
 
-		const commandArg = vi.mocked(plugin.addCommand).mock.calls[0]![0] as {
-			checkCallback: (checking: boolean) => boolean;
-		};
-		const result = commandArg.checkCallback(false);
+		const result = getCheckCallback(plugin)(false);
 		expect(result).toBe(true);
 		expect(mockedExec).toHaveBeenCalledTimes(1);
 	});
@@ -358,17 +347,7 @@ describe("onload", () => {
 		await plugin.onload();
 		plugin.settings.enabled = false;
 
-		const workspace = plugin.app.workspace as unknown as Record<
-			string,
-			ReturnType<typeof vi.fn>
-		>;
-		const layoutReadyCb = workspace["onLayoutReady"]!.mock.calls[0]![0] as () => void;
-		layoutReadyCb();
-
-		const vaultOn = (plugin.app.vault as unknown as Record<string, ReturnType<typeof vi.fn>>)[
-			"on"
-		]!;
-		const modifyHandler = vaultOn.mock.calls[0]![1] as (file: unknown) => void;
+		const modifyHandler = getModifyHandler(plugin);
 
 		const file = new TFileClass();
 		file.path = "test.md";
@@ -383,18 +362,7 @@ describe("onload", () => {
 		await plugin.onload();
 		plugin.settings.enabled = true;
 
-		const workspace = plugin.app.workspace as unknown as Record<
-			string,
-			ReturnType<typeof vi.fn>
-		>;
-		const layoutReadyCb = workspace["onLayoutReady"]!.mock.calls[0]![0] as () => void;
-		layoutReadyCb();
-
-		const vaultOn = (plugin.app.vault as unknown as Record<string, ReturnType<typeof vi.fn>>)[
-			"on"
-		]!;
-		const modifyHandler = vaultOn.mock.calls[0]![1] as (file: unknown) => void;
-
+		const modifyHandler = getModifyHandler(plugin);
 		modifyHandler({ path: "test.md", extension: "md" });
 
 		expect(asTestAccess(plugin).debounceTimers.has("test.md")).toBe(false);
@@ -402,138 +370,113 @@ describe("onload", () => {
 
 	it("modify handler skips non-md files", async () => {
 		vi.useFakeTimers();
-		const plugin = createPlugin();
-		await plugin.onload();
-		plugin.settings.enabled = true;
+		try {
+			const plugin = createPlugin();
+			await plugin.onload();
+			plugin.settings.enabled = true;
 
-		const workspace = plugin.app.workspace as unknown as Record<
-			string,
-			ReturnType<typeof vi.fn>
-		>;
-		const layoutReadyCb = workspace["onLayoutReady"]!.mock.calls[0]![0] as () => void;
-		layoutReadyCb();
+			const modifyHandler = getModifyHandler(plugin);
 
-		const vaultOn = (plugin.app.vault as unknown as Record<string, ReturnType<typeof vi.fn>>)[
-			"on"
-		]!;
-		const modifyHandler = vaultOn.mock.calls[0]![1] as (file: unknown) => void;
+			const file = new TFileClass();
+			file.path = "image.png";
+			file.extension = "png";
+			modifyHandler(file);
 
-		const file = new TFileClass();
-		file.path = "image.png";
-		file.extension = "png";
-		modifyHandler(file);
-
-		expect(asTestAccess(plugin).debounceTimers.has("image.png")).toBe(false);
-		vi.useRealTimers();
+			expect(asTestAccess(plugin).debounceTimers.has("image.png")).toBe(false);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("modify handler skips files in formattingPaths", async () => {
 		vi.useFakeTimers();
-		const plugin = createPlugin();
-		await plugin.onload();
-		plugin.settings.enabled = true;
-		asTestAccess(plugin).formattingPaths.add("test.md");
+		try {
+			const plugin = createPlugin();
+			await plugin.onload();
+			plugin.settings.enabled = true;
+			asTestAccess(plugin).formattingPaths.add("test.md");
 
-		const workspace = plugin.app.workspace as unknown as Record<
-			string,
-			ReturnType<typeof vi.fn>
-		>;
-		const layoutReadyCb = workspace["onLayoutReady"]!.mock.calls[0]![0] as () => void;
-		layoutReadyCb();
+			const modifyHandler = getModifyHandler(plugin);
 
-		const vaultOn = (plugin.app.vault as unknown as Record<string, ReturnType<typeof vi.fn>>)[
-			"on"
-		]!;
-		const modifyHandler = vaultOn.mock.calls[0]![1] as (file: unknown) => void;
+			const file = new TFileClass();
+			file.path = "test.md";
+			file.extension = "md";
+			modifyHandler(file);
 
-		const file = new TFileClass();
-		file.path = "test.md";
-		file.extension = "md";
-		modifyHandler(file);
-
-		expect(asTestAccess(plugin).debounceTimers.has("test.md")).toBe(false);
-		vi.useRealTimers();
+			expect(asTestAccess(plugin).debounceTimers.has("test.md")).toBe(false);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("modify handler skips files in recentlyFormatted", async () => {
 		vi.useFakeTimers();
-		const plugin = createPlugin();
-		await plugin.onload();
-		plugin.settings.enabled = true;
-		asTestAccess(plugin).recentlyFormatted.add("test.md");
+		try {
+			const plugin = createPlugin();
+			await plugin.onload();
+			plugin.settings.enabled = true;
+			asTestAccess(plugin).recentlyFormatted.add("test.md");
 
-		const workspace = plugin.app.workspace as unknown as Record<
-			string,
-			ReturnType<typeof vi.fn>
-		>;
-		const layoutReadyCb = workspace["onLayoutReady"]!.mock.calls[0]![0] as () => void;
-		layoutReadyCb();
+			const modifyHandler = getModifyHandler(plugin);
 
-		const vaultOn = (plugin.app.vault as unknown as Record<string, ReturnType<typeof vi.fn>>)[
-			"on"
-		]!;
-		const modifyHandler = vaultOn.mock.calls[0]![1] as (file: unknown) => void;
+			const file = new TFileClass();
+			file.path = "test.md";
+			file.extension = "md";
+			modifyHandler(file);
 
-		const file = new TFileClass();
-		file.path = "test.md";
-		file.extension = "md";
-		modifyHandler(file);
-
-		expect(asTestAccess(plugin).debounceTimers.has("test.md")).toBe(false);
-		vi.useRealTimers();
+			expect(asTestAccess(plugin).debounceTimers.has("test.md")).toBe(false);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("modify handler calls scheduleFormat for valid md files", async () => {
 		vi.useFakeTimers();
-		const plugin = createPlugin();
-		await plugin.onload();
-		plugin.settings.enabled = true;
+		try {
+			const plugin = createPlugin();
+			await plugin.onload();
+			plugin.settings.enabled = true;
 
-		const workspace = plugin.app.workspace as unknown as Record<
-			string,
-			ReturnType<typeof vi.fn>
-		>;
-		const layoutReadyCb = workspace["onLayoutReady"]!.mock.calls[0]![0] as () => void;
-		layoutReadyCb();
+			const modifyHandler = getModifyHandler(plugin);
 
-		const vaultOn = (plugin.app.vault as unknown as Record<string, ReturnType<typeof vi.fn>>)[
-			"on"
-		]!;
-		const modifyHandler = vaultOn.mock.calls[0]![1] as (file: unknown) => void;
+			const file = new TFileClass();
+			file.path = "test.md";
+			file.extension = "md";
+			modifyHandler(file);
 
-		const file = new TFileClass();
-		file.path = "test.md";
-		file.extension = "md";
-		modifyHandler(file);
-
-		expect(asTestAccess(plugin).debounceTimers.has("test.md")).toBe(true);
-		vi.useRealTimers();
+			expect(asTestAccess(plugin).debounceTimers.has("test.md")).toBe(true);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });
 
 describe("onunload", () => {
 	it("clears all timers and tracking sets", async () => {
 		vi.useFakeTimers();
-		const plugin = createPlugin();
-		await plugin.loadSettings();
-		plugin.settings.command = "prettier";
-		plugin.settings.args = "--write";
+		try {
+			const plugin = createPlugin();
+			await plugin.loadSettings();
+			plugin.settings.command = "prettier";
+			plugin.settings.args = "--write";
 
-		asTestAccess(plugin).debounceTimers.set(
-			"a.md",
-			setTimeout(() => {}, 1000),
-		);
-		asTestAccess(plugin).cooldownTimers.add(setTimeout(() => {}, 1000));
-		asTestAccess(plugin).formattingPaths.add("b.md");
-		asTestAccess(plugin).recentlyFormatted.add("c.md");
+			asTestAccess(plugin).debounceTimers.set(
+				"a.md",
+				setTimeout(() => {}, 1000),
+			);
+			asTestAccess(plugin).cooldownTimers.add(setTimeout(() => {}, 1000));
+			asTestAccess(plugin).formattingPaths.add("b.md");
+			asTestAccess(plugin).recentlyFormatted.add("c.md");
 
-		plugin.onunload();
+			plugin.onunload();
 
-		expect(asTestAccess(plugin).debounceTimers.size).toBe(0);
-		expect(asTestAccess(plugin).cooldownTimers.size).toBe(0);
-		expect(asTestAccess(plugin).formattingPaths.size).toBe(0);
-		expect(asTestAccess(plugin).recentlyFormatted.size).toBe(0);
-		vi.useRealTimers();
+			expect(asTestAccess(plugin).debounceTimers.size).toBe(0);
+			expect(asTestAccess(plugin).cooldownTimers.size).toBe(0);
+			expect(asTestAccess(plugin).formattingPaths.size).toBe(0);
+			expect(asTestAccess(plugin).recentlyFormatted.size).toBe(0);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });
 
@@ -553,25 +496,24 @@ describe("scheduleFormat", () => {
 	const mockedExec = vi.mocked(exec);
 
 	beforeEach(() => {
+		vi.useFakeTimers();
 		vi.stubEnv("SHELL", "/bin/zsh");
 		mockedExec.mockReset();
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		vi.unstubAllEnvs();
 	});
 
 	it("debounces and calls formatFile after delay", async () => {
-		vi.useFakeTimers();
 		const plugin = createPlugin();
 		await plugin.loadSettings();
 		plugin.settings.command = "prettier";
 		plugin.settings.args = "--write";
 		plugin.settings.debounceMs = 300;
 
-		// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
-		const file = { path: "note.md", extension: "md" } as TFile;
-		asTestAccess(plugin).scheduleFormat(file);
+		asTestAccess(plugin).scheduleFormat(makeFile("note.md"));
 
 		expect(mockedExec).not.toHaveBeenCalled();
 		expect(asTestAccess(plugin).debounceTimers.has("note.md")).toBe(true);
@@ -580,19 +522,16 @@ describe("scheduleFormat", () => {
 
 		expect(mockedExec).toHaveBeenCalledTimes(1);
 		expect(asTestAccess(plugin).debounceTimers.has("note.md")).toBe(false);
-		vi.useRealTimers();
 	});
 
 	it("resets timer on repeated calls", async () => {
-		vi.useFakeTimers();
 		const plugin = createPlugin();
 		await plugin.loadSettings();
 		plugin.settings.command = "prettier";
 		plugin.settings.args = "--write";
 		plugin.settings.debounceMs = 300;
 
-		// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
-		const file = { path: "note.md", extension: "md" } as TFile;
+		const file = makeFile("note.md");
 		asTestAccess(plugin).scheduleFormat(file);
 
 		vi.advanceTimersByTime(200);
@@ -605,6 +544,5 @@ describe("scheduleFormat", () => {
 
 		vi.advanceTimersByTime(100);
 		expect(mockedExec).toHaveBeenCalledTimes(1);
-		vi.useRealTimers();
 	});
 });

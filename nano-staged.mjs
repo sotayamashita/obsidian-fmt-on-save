@@ -11,5 +11,5 @@ export default {
 	],
 
 	// TypeScript files: additional checks
-	"*.{ts,tsx}": ["oxlint --fix", "pnpm typecheck", "vitest related --run"],
+	"*.{ts,tsx}": ["oxlint --fix", "bash -c 'pnpm typecheck'", "vitest related --run"],
 };

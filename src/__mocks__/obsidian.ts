@@ -21,7 +21,67 @@ export class FileSystemAdapter {
 
 export const Notice = vi.fn();
 
-export class PluginSettingTab {}
+export class PluginSettingTab {
+	app: unknown;
+	containerEl = {
+		empty: vi.fn(),
+	};
+	constructor(app: unknown, _plugin: unknown) {
+		this.app = app;
+	}
+}
+
+type TextOnChange = (value: string) => void | Promise<void>;
+type ToggleOnChange = (value: boolean) => void | Promise<void>;
+
+class MockTextComponent {
+	setPlaceholder() {
+		return this;
+	}
+	setValue() {
+		return this;
+	}
+	onChange(cb: TextOnChange) {
+		MockTextComponent.lastOnChange = cb;
+		MockTextComponent.allOnChange.push(cb);
+		return this;
+	}
+	static lastOnChange: TextOnChange | null = null;
+	static allOnChange: TextOnChange[] = [];
+	static reset() {
+		MockTextComponent.lastOnChange = null;
+		MockTextComponent.allOnChange = [];
+	}
+}
+
+class MockToggleComponent {
+	setValue() {
+		return this;
+	}
+	onChange(cb: ToggleOnChange) {
+		MockToggleComponent.lastOnChange = cb;
+		return this;
+	}
+	static lastOnChange: ToggleOnChange | null = null;
+}
+
+class MockButtonComponent {
+	setButtonText() {
+		return this;
+	}
+	setDisabled(_disabled: boolean) {
+		MockButtonComponent.lastSetDisabled = _disabled;
+		return this;
+	}
+	onClick(cb: () => void) {
+		MockButtonComponent.lastOnClick = cb;
+		return this;
+	}
+	static lastOnClick: (() => void) | null = null;
+	static lastSetDisabled: boolean | null = null;
+}
+
+export { MockTextComponent, MockToggleComponent, MockButtonComponent };
 
 export class Setting {
 	setName() {
@@ -33,17 +93,22 @@ export class Setting {
 	setHeading() {
 		return this;
 	}
-	addText() {
+	addText(cb: (text: MockTextComponent) => MockTextComponent) {
+		cb(new MockTextComponent());
 		return this;
 	}
-	addToggle() {
+	addToggle(cb: (toggle: MockToggleComponent) => MockToggleComponent) {
+		cb(new MockToggleComponent());
 		return this;
 	}
-	addButton() {
+	addButton(cb: (button: MockButtonComponent) => void) {
+		cb(new MockButtonComponent());
 		return this;
 	}
 	settingEl =
-		typeof document !== "undefined" ? document.createElement("div") : ({} as HTMLElement);
+		typeof document !== "undefined"
+			? document.createElement("div")
+			: ({ toggleClass: vi.fn(), style: {} } as unknown as HTMLElement);
 	descEl = { setText: vi.fn() };
 }
 

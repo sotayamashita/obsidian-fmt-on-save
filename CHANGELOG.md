@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/0.1.4...0.1.5) (2026-03-12)
+
+
+### Bug Fixes
+
+* rename .release-please-config.json to release-please-config.json ([#19](https://github.com/sotayamashita/obsidian-fmt-on-save/issues/19)) ([11f850d](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/11f850d65ada545a2c378a2515de2bd2bfae6e64))
+* use plain version tags for Obsidian compatibility ([#18](https://github.com/sotayamashita/obsidian-fmt-on-save/issues/18)) ([144df46](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/144df46a1d3cbc6a796fe93fa8d25d3583ed726d))
+
 ## [0.1.4](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/fmt-on-save-v0.1.3...fmt-on-save-v0.1.4) (2026-03-11)
 
 ### Features

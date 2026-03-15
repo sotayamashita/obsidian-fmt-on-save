@@ -33,11 +33,5 @@ export default tseslint.config(
 		"main.js",
 		"vitest.config.ts",
 	]),
-	{
-		files: ["src/**/*.test.ts"],
-		rules: {
-			"@typescript-eslint/unbound-method": "off",
-		},
-	},
 	...oxlint.configs["flat/recommended"],
 );

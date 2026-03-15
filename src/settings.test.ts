@@ -62,6 +62,7 @@ describe("FmtOnSaveSettingTab", () => {
 
 			await commandOnChange("deno");
 			expect(plugin.settings.command).toBe("deno");
+			// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 			expect(plugin.saveSettings).toHaveBeenCalled();
 		});
 	});
@@ -77,6 +78,7 @@ describe("FmtOnSaveSettingTab", () => {
 
 			await argsOnChange("fmt");
 			expect(plugin.settings.args).toBe("fmt");
+			// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 			expect(plugin.saveSettings).toHaveBeenCalled();
 		});
 	});
@@ -91,6 +93,7 @@ describe("FmtOnSaveSettingTab", () => {
 
 			await onChange(false);
 			expect(plugin.settings.enabled).toBe(false);
+			// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 			expect(plugin.saveSettings).toHaveBeenCalled();
 		});
 	});

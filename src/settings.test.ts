@@ -141,3 +141,4 @@ describe("FmtOnSaveSettingTab", () => {
 		});
 	});
 });
+/* eslint-enable @typescript-eslint/unbound-method */

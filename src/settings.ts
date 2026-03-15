@@ -5,14 +5,12 @@ import { buildWhichCommand, validateCommand } from "./shell";
 
 /** Persisted configuration for the Format on Save plugin. */
 export interface FmtOnSaveSettings {
-	/** Whether auto-format on modify is active. */
+	/** Whether format on explicit save (Ctrl+S / Cmd+S) is active. */
 	enabled: boolean;
 	/** Path or name of the formatter executable (e.g. `"prettier"`, `"deno"`). */
 	command: string;
 	/** Arguments inserted between the command and the file path (e.g. `"--write"`). */
 	args: string;
-	/** Milliseconds to wait after the last modify event before formatting. */
-	debounceMs: number;
 }
 
 /** Sensible defaults applied when no persisted settings exist. */
@@ -20,7 +18,6 @@ export const DEFAULT_SETTINGS: FmtOnSaveSettings = {
 	enabled: true,
 	command: "",
 	args: "",
-	debounceMs: 500,
 };
 
 /** Settings tab rendered under **Settings → Community plugins → Format on Save**. */
@@ -32,20 +29,10 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	/** Builds the settings UI with toggle, text inputs, and debounce control. */
+	/** Builds the settings UI with toggle, text inputs. */
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-
-		const dependentEls: HTMLElement[] = [];
-
-		const setDependentsDisabled = (disabled: boolean) => {
-			for (const el of dependentEls) {
-				el.toggleClass("is-disabled", disabled);
-				el.style.opacity = disabled ? "0.5" : "";
-				el.style.pointerEvents = disabled ? "none" : "";
-			}
-		};
 
 		// ── Formatter ───────────────────────────────────────
 		new Setting(containerEl).setName("Formatter").setHeading();
@@ -109,43 +96,15 @@ export class FmtOnSaveSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Format on save")
-			.setDesc("Automatically format Markdown files when they are modified.")
+			.setDesc(
+				"Automatically format Markdown files on explicit save (Ctrl+S / Cmd+S). " +
+					"Auto-save does not trigger formatting.",
+			)
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.enabled).onChange(async (value) => {
 					this.plugin.settings.enabled = value;
 					await this.plugin.saveSettings();
-					setDependentsDisabled(!value);
 				}),
 			);
-
-		const debounceSetting = new Setting(containerEl)
-			.setName("Debounce delay (ms)")
-			.setDesc(
-				"Wait this many milliseconds after the last modification before formatting. " +
-					"Prevents running the formatter on every keystroke.",
-			)
-			.addText((text) =>
-				text
-					.setPlaceholder("500")
-					.setValue(String(this.plugin.settings.debounceMs))
-					.onChange(async (value) => {
-						const parsed = parseInt(value, 10);
-						if (!isNaN(parsed) && parsed >= 0) {
-							this.plugin.settings.debounceMs = parsed;
-							await this.plugin.saveSettings();
-							debounceSetting.descEl.setText(
-								"Wait this many milliseconds after the last modification before formatting. " +
-									"Prevents running the formatter on every keystroke.",
-							);
-						} else {
-							debounceSetting.descEl.setText(
-								"Invalid value. Enter a non-negative integer (e.g. 500).",
-							);
-						}
-					}),
-			);
-		dependentEls.push(debounceSetting.settingEl);
-
-		setDependentsDisabled(!this.plugin.settings.enabled);
 	}
 }

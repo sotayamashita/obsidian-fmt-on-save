@@ -7,6 +7,7 @@ export class Plugin {
 	addCommand = vi.fn();
 	addSettingTab = vi.fn();
 	registerEvent = vi.fn();
+	registerDomEvent = vi.fn();
 }
 
 export class TFile {

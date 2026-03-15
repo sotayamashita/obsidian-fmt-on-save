@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method -- vi.fn() mocks don't need `this` binding */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { exec } from "child_process";
 import { Notice, FileSystemAdapter, TFile } from "obsidian";
@@ -522,4 +521,3 @@ describe("saveSettings", () => {
 		expect(plugin.saveData).toHaveBeenCalledWith(plugin.settings);
 	});
 });
-/* eslint-enable @typescript-eslint/unbound-method */

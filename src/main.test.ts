@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method -- vi.fn() mocks don't need `this` binding */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { exec } from "child_process";
-import type { TFile } from "obsidian";
-import { Notice, FileSystemAdapter, TFile as TFileClass } from "obsidian";
+import { Notice, FileSystemAdapter, TFile } from "obsidian";
 import FmtOnSavePlugin from "./main";
 import { DEFAULT_SETTINGS } from "./settings";
 
@@ -42,8 +41,10 @@ function createPlugin(overrides?: Partial<{ loadDataReturn: unknown }>): FmtOnSa
 }
 
 function makeFile(path = "note.md") {
-	// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
-	return { path, extension: "md" } as TFile;
+	const file = new TFile();
+	file.path = path;
+	file.extension = "md";
+	return file;
 }
 
 type ExecCallback = (err: Error | null, stdout: string, stderr: string) => void;
@@ -410,7 +411,7 @@ describe("onload", () => {
 		asTestAccess(plugin).saveRequested.add("test.md");
 		const modifyHandler = getModifyHandler(plugin);
 
-		const file = new TFileClass();
+		const file = new TFile();
 		file.path = "test.md";
 		file.extension = "md";
 		modifyHandler(file);
@@ -437,7 +438,7 @@ describe("onload", () => {
 
 		const modifyHandler = getModifyHandler(plugin);
 
-		const file = new TFileClass();
+		const file = new TFile();
 		file.path = "image.png";
 		file.extension = "png";
 		modifyHandler(file);
@@ -452,7 +453,7 @@ describe("onload", () => {
 
 		const modifyHandler = getModifyHandler(plugin);
 
-		const file = new TFileClass();
+		const file = new TFile();
 		file.path = "test.md";
 		file.extension = "md";
 		modifyHandler(file);
@@ -468,7 +469,7 @@ describe("onload", () => {
 		asTestAccess(plugin).saveRequested.add("test.md");
 		const modifyHandler = getModifyHandler(plugin);
 
-		const file = new TFileClass();
+		const file = new TFile();
 		file.path = "test.md";
 		file.extension = "md";
 		modifyHandler(file);
@@ -486,7 +487,7 @@ describe("onload", () => {
 
 		const modifyHandler = getModifyHandler(plugin);
 
-		const file = new TFileClass();
+		const file = new TFile();
 		file.path = "test.md";
 		file.extension = "md";
 		modifyHandler(file);
@@ -521,3 +522,4 @@ describe("saveSettings", () => {
 		expect(plugin.saveData).toHaveBeenCalledWith(plugin.settings);
 	});
 });
+/* eslint-enable @typescript-eslint/unbound-method */

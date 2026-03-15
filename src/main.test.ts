@@ -68,6 +68,7 @@ function getModifyHandler(plugin: FmtOnSavePlugin): (file: unknown) => void {
 }
 
 function getKeydownHandler(plugin: FmtOnSavePlugin): (evt: Partial<KeyboardEvent>) => void {
+	// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 	const registerDomEvent = vi.mocked(plugin.registerDomEvent) as unknown as ReturnType<
 		typeof vi.fn
 	>;
@@ -75,6 +76,7 @@ function getKeydownHandler(plugin: FmtOnSavePlugin): (evt: Partial<KeyboardEvent
 }
 
 function getCheckCallback(plugin: FmtOnSavePlugin): (checking: boolean) => boolean {
+	// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 	const commandArg = vi.mocked(plugin.addCommand).mock.calls[0]![0] as {
 		checkCallback: (checking: boolean) => boolean;
 	};
@@ -258,9 +260,12 @@ describe("onload", () => {
 		await plugin.onload();
 
 		const workspace = plugin.app.workspace as unknown as Record<string, unknown>;
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 		expect(plugin.registerDomEvent).toHaveBeenCalledTimes(1);
 		expect(workspace["onLayoutReady"]).toHaveBeenCalledTimes(1);
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 		expect(plugin.addCommand).toHaveBeenCalledTimes(1);
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 		expect(plugin.addSettingTab).toHaveBeenCalledTimes(1);
 	});
 
@@ -268,6 +273,7 @@ describe("onload", () => {
 		const plugin = createPlugin();
 		await plugin.onload();
 
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 		const commandArg = vi.mocked(plugin.addCommand).mock.calls[0]![0] as {
 			id: string;
 			name: string;
@@ -518,6 +524,7 @@ describe("saveSettings", () => {
 
 		await plugin.saveSettings();
 
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- method is a vitest mock
 		expect(plugin.saveData).toHaveBeenCalledWith(plugin.settings);
 	});
 });

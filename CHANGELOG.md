@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/0.1.5...1.0.0) (2026-03-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* The `debounceMs` setting has been removed. Formatting now triggers on explicit save instead of on every file modification.
+
+### Features
+
+* trigger format only on explicit save (Ctrl+S / Cmd+S) ([#25](https://github.com/sotayamashita/obsidian-fmt-on-save/issues/25)) ([f6dd47b](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/f6dd47b6610593e5f5fe687afc3ed0d13914ae91))
+
 ## [0.1.5](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/0.1.4...0.1.5) (2026-03-12)
 
 

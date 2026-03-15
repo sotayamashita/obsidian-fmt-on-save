@@ -1,7 +1,7 @@
 {
 	"id": "fmt-on-save",
 	"name": "Format on Save",
-	"version": "0.1.5",
+	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Run any external formatter (prettier, deno fmt, etc.) on save.",
 	"author": "sotayamashita",

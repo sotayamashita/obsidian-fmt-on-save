@@ -57,7 +57,7 @@ describe("FmtOnSaveSettingTab", () => {
 			const { tab, plugin } = createTab();
 			tab.display();
 
-			// allOnChange[0] = command, allOnChange[1] = args, allOnChange[2] = debounce
+			// allOnChange[0] = command, allOnChange[1] = args
 			const commandOnChange = MockTextComponent.allOnChange[0]!;
 			expect(commandOnChange).toBeDefined();
 
@@ -78,51 +78,6 @@ describe("FmtOnSaveSettingTab", () => {
 
 			await argsOnChange("fmt");
 			expect(plugin.settings.args).toBe("fmt");
-			expect(plugin.saveSettings).toHaveBeenCalled();
-		});
-	});
-
-	describe("debounce onChange", () => {
-		it("updates debounceMs with valid integer", async () => {
-			const { tab, plugin } = createTab();
-			tab.display();
-
-			// allOnChange[2] = debounce
-			const onChange = MockTextComponent.allOnChange[2]!;
-			expect(onChange).toBeDefined();
-
-			await onChange("750");
-			expect(plugin.settings.debounceMs).toBe(750);
-			expect(plugin.saveSettings).toHaveBeenCalled();
-		});
-
-		it("does not update debounceMs with invalid value", async () => {
-			const { tab, plugin } = createTab();
-			tab.display();
-
-			const onChange = MockTextComponent.allOnChange[2]!;
-			await onChange("abc");
-			expect(plugin.settings.debounceMs).toBe(DEFAULT_SETTINGS.debounceMs);
-			expect(plugin.saveSettings).not.toHaveBeenCalled();
-		});
-
-		it("does not update debounceMs with negative value", async () => {
-			const { tab, plugin } = createTab();
-			tab.display();
-
-			const onChange = MockTextComponent.allOnChange[2]!;
-			await onChange("-100");
-			expect(plugin.settings.debounceMs).toBe(DEFAULT_SETTINGS.debounceMs);
-			expect(plugin.saveSettings).not.toHaveBeenCalled();
-		});
-
-		it("accepts zero as valid debounce value", async () => {
-			const { tab, plugin } = createTab();
-			tab.display();
-
-			const onChange = MockTextComponent.allOnChange[2]!;
-			await onChange("0");
-			expect(plugin.settings.debounceMs).toBe(0);
 			expect(plugin.saveSettings).toHaveBeenCalled();
 		});
 	});

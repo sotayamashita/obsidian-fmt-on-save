@@ -5,35 +5,40 @@ import type { FmtOnSaveSettings } from "./settings";
 import { buildFormatCommand } from "./shell";
 
 /**
- * Obsidian plugin that runs an external formatter on every file save.
+ * Obsidian plugin that runs an external formatter on explicit save (Ctrl+S / Cmd+S).
  *
- * Listens for vault `modify` events, debounces rapid edits, and shells out
- * to a user-configured CLI formatter (e.g. Prettier, deno fmt).
+ * Listens for keyboard save events and subsequent vault `modify` events, then
+ * shells out to a user-configured CLI formatter (e.g. Prettier, deno fmt).
+ * Auto-save does not trigger formatting, preventing disruption during typing.
  * Desktop only — relies on `child_process.exec`.
  */
-const POST_FORMAT_COOLDOWN_MS = 1000;
-
 export default class FmtOnSavePlugin extends Plugin {
 	settings!: FmtOnSaveSettings;
 	private formattingPaths: Set<string> = new Set();
-	private recentlyFormatted: Set<string> = new Set();
-	private debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
-	private cooldownTimers: Set<ReturnType<typeof setTimeout>> = new Set();
+	private saveRequested: Set<string> = new Set();
 
-	/** Registers the modify listener, format command, and settings tab. */
+	/** Registers the save keydown listener, modify listener, format command, and settings tab. */
 	override async onload() {
 		await this.loadSettings();
+
+		this.registerDomEvent(document, "keydown", (evt: KeyboardEvent) => {
+			if (!(evt.ctrlKey || evt.metaKey) || evt.key !== "s") return;
+			const file = this.app.workspace.getActiveFile();
+			if (file && file.extension === "md") {
+				this.saveRequested.add(file.path);
+			}
+		});
 
 		this.app.workspace.onLayoutReady(() => {
 			this.registerEvent(
 				this.app.vault.on("modify", (file) => {
-					if (!this.settings.enabled) return;
 					if (!(file instanceof TFile)) return;
 					if (file.extension !== "md") return;
+					if (!this.saveRequested.has(file.path)) return;
+					this.saveRequested.delete(file.path);
+					if (!this.settings.enabled) return;
 					if (this.formattingPaths.has(file.path)) return;
-					if (this.recentlyFormatted.has(file.path)) return;
-
-					this.scheduleFormat(file);
+					this.formatFile(file);
 				}),
 			);
 		});
@@ -54,18 +59,10 @@ export default class FmtOnSavePlugin extends Plugin {
 		this.addSettingTab(new FmtOnSaveSettingTab(this.app, this));
 	}
 
-	/** Clears all pending debounce timers on plugin unload. */
+	/** Clears all tracking sets on plugin unload. */
 	override onunload() {
-		for (const timer of this.debounceTimers.values()) {
-			clearTimeout(timer);
-		}
-		this.debounceTimers.clear();
-		for (const timer of this.cooldownTimers) {
-			clearTimeout(timer);
-		}
-		this.cooldownTimers.clear();
 		this.formattingPaths.clear();
-		this.recentlyFormatted.clear();
+		this.saveRequested.clear();
 	}
 
 	/** Loads persisted settings, falling back to {@link DEFAULT_SETTINGS}. */
@@ -83,33 +80,12 @@ export default class FmtOnSavePlugin extends Plugin {
 	}
 
 	/**
-	 * Debounces formatting for the given file.
-	 *
-	 * Resets the timer on each call so rapid edits coalesce into a single
-	 * format invocation after {@link FmtOnSaveSettings.debounceMs} ms of quiet.
-	 */
-	private scheduleFormat(file: TFile) {
-		const existing = this.debounceTimers.get(file.path);
-		if (existing) {
-			clearTimeout(existing);
-		}
-
-		const timer = setTimeout(() => {
-			this.debounceTimers.delete(file.path);
-			this.formatFile(file);
-		}, this.settings.debounceMs);
-
-		this.debounceTimers.set(file.path, timer);
-	}
-
-	/**
 	 * Runs the configured formatter against a file.
 	 *
 	 * Builds a shell command from {@link FmtOnSaveSettings.command},
 	 * {@link FmtOnSaveSettings.args}, and the file's absolute path, then
-	 * executes it via `child_process.exec`. Tracks in-flight and recently
-	 * formatted paths to prevent re-trigger loops caused by the formatter's
-	 * own file write.
+	 * executes it via `child_process.exec`. Tracks in-flight paths to
+	 * prevent concurrent formatting of the same file.
 	 */
 	private formatFile(file: TFile) {
 		const { command, args } = this.settings;
@@ -138,13 +114,6 @@ export default class FmtOnSavePlugin extends Plugin {
 		this.formattingPaths.add(file.path);
 		exec(cmd, { cwd: vaultPath }, (error, _stdout, stderr) => {
 			this.formattingPaths.delete(file.path);
-			// Briefly ignore modify events to prevent re-trigger from the formatter's write
-			this.recentlyFormatted.add(file.path);
-			const cooldown = setTimeout(() => {
-				this.cooldownTimers.delete(cooldown);
-				this.recentlyFormatted.delete(file.path);
-			}, POST_FORMAT_COOLDOWN_MS);
-			this.cooldownTimers.add(cooldown);
 			if (error) {
 				new Notice(`Format on save: ${error.message}`);
 				console.error("fmt-on-save error:", error);

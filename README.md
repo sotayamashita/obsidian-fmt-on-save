@@ -1,6 +1,7 @@
 # Format on Save
 
 [![codecov](https://codecov.io/gh/sotayamashita/obsidian-fmt-on-save/graph/badge.svg?token=RURH9WJIQO)](https://codecov.io/gh/sotayamashita/obsidian-fmt-on-save)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sotayamashita/obsidian-fmt-on-save)
 
 An Obsidian plugin that runs any external formatter on save. Bring your own tool — Prettier, deno fmt, or anything else that accepts a file path.
 

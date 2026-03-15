@@ -1,6 +1,6 @@
 {
 	"name": "fmt-on-save",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Run any external formatter on save in Obsidian",
 	"keywords": [],
 	"license": "0-BSD",

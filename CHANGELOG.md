@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/1.0.0...1.0.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* address ObsidianReviewBot eslint findings ([#27](https://github.com/sotayamashita/obsidian-fmt-on-save/issues/27)) ([9bdff2c](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/9bdff2c4ca05d8e25e17a9d93bfa4365e5808702))
+
 ## [1.0.0](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/0.1.5...1.0.0) (2026-03-15)
 
 

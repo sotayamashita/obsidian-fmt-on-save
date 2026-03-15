@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/1.0.1...1.0.2) (2026-03-15)
+
+
+### Bug Fixes
+
+* remove eslint-disable comments from test files ([#29](https://github.com/sotayamashita/obsidian-fmt-on-save/issues/29)) ([174e8f6](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/174e8f60ead60a2ffa5540f6ff981d653c462ebb))
+
 ## [1.0.1](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/1.0.0...1.0.1) (2026-03-15)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/1.0.2...1.0.3) (2026-03-15)
+
+
+### Bug Fixes
+
+* add inline eslint-disable for unbound-method in test files ([#32](https://github.com/sotayamashita/obsidian-fmt-on-save/issues/32)) ([30fbe82](https://github.com/sotayamashita/obsidian-fmt-on-save/commit/30fbe8294441712ee4d24b441ba422da92fa00de))
+
 ## [1.0.2](https://github.com/sotayamashita/obsidian-fmt-on-save/compare/1.0.1...1.0.2) (2026-03-15)
 
 
